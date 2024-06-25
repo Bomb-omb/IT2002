@@ -1,0 +1,1 @@
+INSERT INTO transfers (container_iso_code, expected_trfstart, expected_trfend, actual_trfstart, actual_trfend, from_bay, from_row, from_tier, to_bay, to_row, to_tier) VALUES ('PHDU2443902', '2024-02-07 18:50:00', '2024-02-07 19:00:00', '2024-02-07 18:50:00', '2024-02-07 19:05:00', 14, 22, 1, 5, 8, 4);

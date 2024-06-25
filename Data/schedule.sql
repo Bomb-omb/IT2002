@@ -1,0 +1,5 @@
+INSERT INTO schedule (ship_mmsi, berth_id, expected_arrival, expected_departure, actual_arrival, actual_departure) VALUES (376733686, 1, '2024-02-06 08:30:00', '2024-02-06 09:30:00', '2024-02-06 08:35:00', '2024-02-06 09:35:00');
+INSERT INTO schedule (ship_mmsi, berth_id, expected_arrival, expected_departure, actual_arrival, actual_departure) VALUES (366465561, 2, '2024-02-06 08:45:00', '2024-02-06 09:15:00', '2024-02-06 08:45:00', '2024-02-06 09:15:00');
+INSERT INTO schedule (ship_mmsi, berth_id, expected_arrival, expected_departure, actual_arrival, actual_departure) VALUES (408415138, 3, '2024-02-06 11:45:00', '2024-02-06 12:15:00', '2024-02-06 11:45:00', '2024-02-06 12:15:00');
+INSERT INTO schedule (ship_mmsi, berth_id, expected_arrival, expected_departure, actual_arrival, actual_departure) VALUES (689481007, 4, '2024-02-07 08:45:00', '2024-02-07 09:15:00', '2024-02-07 08:45:00', '2024-02-07 09:45:00');
+INSERT INTO schedule (ship_mmsi, berth_id, expected_arrival, expected_departure, actual_arrival, actual_departure) VALUES (811964587, 6, '2024-02-07 08:45:00', '2024-02-07 09:15:00', '2024-02-07 08:45:00', NULL);

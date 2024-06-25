@@ -1,0 +1,62 @@
+-- WORKLOAD
+
+-- schedule a ship for arrival and departure and assign it an available berth
+INSERT INTO schedule (ship_mmsi, berth_id, expected_arrival, expected_departure, actual_arrival, actual_departure) VALUES (376733686, 1, '2024-02-06 08:30:00', '2024-02-06 09:30:00', '2024-02-06 08:35:00', '2024-02-06 09:35:00');
+
+-- log container's movement (unload from ship)
+INSERT INTO unloads (container_iso_code, ship_mmsi, berth_id, expected_unloadstart, expected_unloadend, actual_unloadstart, actual_unloadend, to_bay, to_row, to_tier) VALUES ('XTLJ1782950', 376733686, 1, '2024-02-06 08:35:00', '2024-02-06 09:00:00', '2024-02-06 08:35:00', '2024-02-06 08:55:00', 7, 9, 1);
+
+-- check if location is occupied or available
+CREATE OR REPLACE VIEW Location_Status AS SELECT l.*, CASE
+        WHEN EXISTS (SELECT 1 FROM loads WHERE from_bay = l.bay AND from_row = l.row AND from_tier = l.tier AND actual_loadstart IS NOT NULL AND actual_loadend IS NOT NULL) THEN 'Occupied' 
+        WHEN EXISTS (SELECT 1 FROM unloads WHERE to_bay = l.bay AND to_row = l.row AND to_tier = l.tier AND actual_unloadstart IS NOT NULL AND actual_unloadend IS NOT NULL) THEN 'Occupied'         
+	WHEN EXISTS (SELECT 1 FROM transfers WHERE to_bay = l.bay AND to_row = l.row AND to_tier = l.tier AND actual_trfstart IS NOT NULL AND actual_trfend IS NULL) THEN 'Occupied' 
+        ELSE 'Available'     
+		END AS Status 
+FROM locations l;
+
+SELECT * FROM location_status;
+
+-- check container status
+CREATE OR REPLACE VIEW Container_Status AS SELECT c.*, CASE
+        WHEN EXISTS (SELECT 1 FROM loads WHERE container_iso_code = c.iso_code AND actual_loadstart IS NOT NULL AND actual_loadend IS NOT NULL) THEN 'In Terminal' 
+        WHEN EXISTS (SELECT 1 FROM unloads WHERE container_iso_code = c.iso_code AND actual_unloadstart IS NOT NULL AND actual_unloadend IS NOT NULL) THEN 'In Terminal'         	WHEN EXISTS (SELECT 1 FROM transfers WHERE container_iso_code = c.iso_code AND actual_trfstart IS NOT NULL AND actual_trfend IS NOT NULL) THEN 'In Terminal' 
+        ELSE 'Not in Terminal'
+		END AS Status 
+FROM containers c;
+
+SELECT * FROM container_status;
+
+-- check ship status (at sea/ at berth/ loading/ unloading)
+CREATE OR REPLACE VIEW Ship_Status AS SELECT s.*, CASE
+        WHEN EXISTS (SELECT 1 FROM schedule WHERE ship_mmsi = s.MMSI AND actual_departure IS NULL AND actual_arrival IS NOT NULL) THEN 'At Berth' 
+        WHEN EXISTS (SELECT 1 FROM loads WHERE ship_mmsi = s.MMSI AND actual_loadend IS NULL) THEN 'Loading'         WHEN EXISTS (SELECT 1 FROM unloads WHERE ship_mmsi = s.MMSI AND actual_unloadend IS NULL) THEN 'Unloading' 
+        ELSE 'At Sea'      
+		END AS Status 
+FROM ships s;
+
+SELECT * FROM ship_status;
+
+-- generate daily movement report 
+SELECT starttime, endtime, c.iso_code, CASE            
+           WHEN operation_type = 'Load' THEN 'Load'
+           WHEN operation_type = 'Unload' THEN 'Unload'   
+           WHEN operation_type = 'Transfer' THEN 'Transfer'
+           ELSE 'Unknown'       
+END AS operation_type
+FROM (SELECT actual_loadstart AS starttime, actual_loadend AS endtime, container_iso_code, 'Load' AS operation_type FROM loads 
+    UNION ALL     
+    SELECT actual_unloadstart AS starttime, actual_unloadend AS endtime, container_iso_code, 'Unload' AS operation_type FROM unloads 
+    UNION ALL   
+    SELECT actual_trfstart AS starttime, actual_trfend AS endtime, container_iso_code, 'Transfer' AS operation_type FROM transfers 
+) AS all_dates JOIN containers c ON c.iso_code = all_dates.container_iso_code
+WHERE starttime IS NOT NULL AND endtime IS NOT NULL
+ORDER BY starttime, endtime ASC;
+
+-- show deletion of ship from ships will affect schedule
+DELETE FROM ships WHERE mmsi = 408415138;
+
+-- show update of schedule timing
+UPDATE schedule 
+SET actual_arrival = '2024-02-07 08:55:00'
+WHERE ship_mmsi = 376733686;
